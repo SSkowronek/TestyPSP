@@ -1,5 +1,5 @@
 // ZMIENIONA WERSJA CACHE - to wymusi na przeglądarkach pobranie nowych plików
-const CACHE_NAME = 'psp-testy-v4'; 
+const CACHE_NAME = 'psp-testy-v5'; 
 
 // 1. Podstawowe pliki aplikacji (dodaj też ikony PWA!)
 const CORE_ASSETS = [
