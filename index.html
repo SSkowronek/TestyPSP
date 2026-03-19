@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Testy PSP</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1f2937">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        fire: { red: '#dc2626', darkRed: '#b91c1c', yellow: '#facc15', darkBg: '#111827', cardDark: '#1f2937' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hidden-view { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-fire-darkBg text-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen flex flex-col font-sans">
+
+    <header class="bg-white dark:bg-fire-cardDark shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
+        <h1 class="text-xl font-bold text-fire-red flex items-center gap-2">
+            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C12 2 7 7 7 13C7 15.76 9.24 18 12 18C14.76 18 17 15.76 17 13C17 7 12 2 12 2ZM12 16C10.34 16 9 14.66 9 13C9 10.74 12 7.15 12 7.15C12 7.15 15 10.74 15 13C15 14.66 13.66 16 12 16ZM12 9C11.5 9.8 11 11.13 11 12C11 12.55 11.45 13 12 13C12.55 13 13 12.55 13 12C13 11.13 12.5 9.8 12 9Z"/></svg>
+            Testy PSP
+        </h1>
+        <button id="themeToggle" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 focus:outline-none">🌓</button>
+    </header>
+
+    <main class="flex-grow p-4 overflow-y-auto">
+        <div id="statusBanner" class="hidden text-center p-3 mb-4 rounded bg-fire-yellow text-black font-semibold"></div>
+
+        <section id="view-dashboard" class="fade-in flex flex-col gap-4 max-w-md mx-auto mt-4">
+            <button onclick="app.showView('view-nauka-setup')" class="w-full bg-fire-red hover:bg-fire-darkRed text-white p-6 rounded-xl shadow-lg text-xl font-bold transition transform active:scale-95 flex flex-col items-center gap-2">
+                <span>📚 Nauka</span>
+                <span class="text-sm font-normal text-red-200">Tryb treningowy z odpowiedziami</span>
+            </button>
+            <button onclick="app.showView('view-egzamin-setup')" class="w-full bg-gray-800 dark:bg-gray-700 hover:bg-gray-900 text-white p-6 rounded-xl shadow-lg text-xl font-bold transition transform active:scale-95 flex flex-col items-center gap-2 border-l-4 border-fire-yellow">
+                <span>⏱️ Egzamin</span>
+                <span class="text-sm font-normal text-gray-300">30 pytań, 30 minut</span>
+            </button>
+        </section>
+
+        <section id="view-nauka-setup" class="hidden-view fade-in max-w-md mx-auto">
+            <h2 class="text-2xl font-bold mb-4">Ustawienia Nauki</h2>
+            <div id="nauka-resume-container" class="hidden mb-4">
+                <button onclick="app.resumeNauka()" class="w-full bg-green-600 text-white p-4 rounded-lg font-bold shadow mb-2">Kontynuuj poprzednią sesję</button>
+            </div>
+            <div class="bg-white dark:bg-fire-cardDark p-4 rounded-xl shadow mb-4">
+                <label class="block mb-2 font-semibold">Wybierz kategorie:</label>
+                <div id="nauka-categories" class="flex flex-col gap-2 mb-4 max-h-40 overflow-y-auto"></div>
+                <label class="block mb-2 font-semibold">Tryb:</label>
+                <select id="nauka-mode" class="w-full p-3 rounded bg-gray-100 dark:bg-gray-800 text-inherit border border-gray-300 dark:border-gray-600">
+                    <option value="random">Losowy</option>
+                    <option value="sequential">Od początku</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="app.startNauka()" class="flex-grow bg-fire-red text-white p-4 rounded-lg font-bold shadow">Zacznij od nowa</button>
+                <button onclick="app.showView('view-dashboard')" class="bg-gray-500 text-white p-4 rounded-lg font-bold shadow">Wróć</button>
+            </div>
+        </section>
+
+        <section id="view-nauka" class="hidden-view fade-in max-w-md mx-auto">
+            <div class="flex justify-between text-sm mb-4 font-semibold">
+                <span class="text-green-500" id="nauka-correct">Dobre: 0</span>
+                <span id="nauka-progress">Pytanie 1/X</span>
+                <span class="text-fire-red" id="nauka-wrong">Złe: 0</span>
+            </div>
+            <div class="bg-white dark:bg-fire-cardDark p-6 rounded-xl shadow-lg mb-4">
+                <span id="nauka-category-label" class="text-xs uppercase text-gray-500 dark:text-gray-400 mb-2 block"></span>
+                <div id="nauka-image-container"></div> <h3 id="nauka-question" class="text-lg font-bold mb-6"></h3>
+                <div id="nauka-options" class="flex flex-col gap-3"></div>
+            </div>
+            <div class="flex justify-between gap-2">
+                <button onclick="app.showView('view-dashboard')" class="bg-gray-500 text-white px-4 py-3 rounded-lg w-full font-bold">Zakończ</button>
+                <button id="nauka-next-btn" onclick="app.nextNauka()" class="hidden bg-fire-yellow text-black px-4 py-3 rounded-lg w-full font-bold">Następne ></button>
+            </div>
+        </section>
+
+        <section id="view-egzamin-setup" class="hidden-view fade-in max-w-md mx-auto">
+             <h2 class="text-2xl font-bold mb-4">Rozpocznij Egzamin</h2>
+             <p class="mb-6 text-gray-600 dark:text-gray-300">Egzamin składa się z 30 losowych pytań. Masz 30 minut na jego rozwiązanie. Poprawność odpowiedzi poznasz dopiero po zakończeniu czasu lub zatwierdzeniu egzaminu.</p>
+             <button onclick="app.startEgzamin()" class="w-full bg-fire-yellow text-black p-4 rounded-lg font-bold shadow mb-2 text-lg">Rozpocznij Egzamin</button>
+             <button onclick="app.showView('view-dashboard')" class="w-full bg-gray-500 text-white p-4 rounded-lg font-bold shadow">Wróć</button>
+        </section>
+
+        <section id="view-egzamin" class="hidden-view fade-in max-w-md mx-auto">
+            <div class="flex justify-between items-center mb-4 bg-white dark:bg-fire-cardDark p-3 rounded-lg shadow sticky top-20 z-10">
+                <span id="egzamin-progress" class="font-bold">1/30</span>
+                <span id="egzamin-timer" class="font-mono text-xl text-fire-red font-bold">30:00</span>
+            </div>
+            <div class="bg-white dark:bg-fire-cardDark p-6 rounded-xl shadow-lg mb-4">
+                <div id="egzamin-image-container"></div> <h3 id="egzamin-question" class="text-lg font-bold mb-6"></h3>
+                <div id="egzamin-options" class="flex flex-col gap-3"></div>
+            </div>
+            <div class="flex justify-between gap-2">
+                <button onclick="app.prevEgzamin()" id="egz-prev" class="bg-gray-500 text-white px-4 py-3 rounded-lg font-bold w-1/3"><</button>
+                <button onclick="app.nextEgzamin()" id="egz-next" class="bg-gray-700 text-white px-4 py-3 rounded-lg font-bold w-1/3">></button>
+                <button onclick="app.finishEgzamin()" class="bg-fire-red text-white px-4 py-3 rounded-lg font-bold w-1/3">Zakończ</button>
+            </div>
+            <div id="egzamin-grid" class="mt-6 grid grid-cols-6 gap-2"></div>
+        </section>
+
+        <section id="view-summary" class="hidden-view fade-in max-w-md mx-auto">
+            <h2 class="text-3xl font-bold text-center mb-2">Wynik Egzaminu</h2>
+            <div class="text-center text-5xl font-bold mb-6" id="summary-score"></div>
+            <button onclick="app.showView('view-dashboard')" class="w-full bg-fire-red text-white p-4 rounded-lg font-bold shadow mb-6">Wróć do menu</button>
+            <div id="summary-details" class="flex flex-col gap-4"></div>
+        </section>
+    </main>
+
+    <script>
+        const DB_URL = 'pytania.json';
+        
+        const app = {
+            questions: [],
+            categories: [],
+            state: { nauka: null, egzamin: null },
+            timerInterval: null,
+
+            async init() {
+                this.bindTheme();
+                await this.fetchQuestions();
+                this.loadState();
+                this.showView('view-dashboard');
+                
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW setup failed', err));
+                }
+            },
+
+            bindTheme() {
+                const isDark = localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+                if (isDark) document.documentElement.classList.add('dark');
+                document.getElementById('themeToggle').addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+                });
+            },
+
+            async fetchQuestions() {
+                const banner = document.getElementById('statusBanner');
+                try {
+                    const res = await fetch(DB_URL);
+                    if (!res.ok) throw new Error('Błąd HTTP');
+                    this.questions = await res.json();
+                    this.categories = [...new Set(this.questions.map(q => q.kategoria))];
+                    this.renderCategories();
+                } catch (err) {
+                    banner.innerText = 'Brak pytań. Upewnij się, że plik pytania.json jest poprawny.';
+                    banner.classList.remove('hidden');
+                }
+            },
+
+            loadState() {
+                const saved = localStorage.getItem('psp_state');
+                if (saved) {
+                    this.state = JSON.parse(saved);
+                    if (this.state.nauka && this.state.nauka.currentIndex < this.state.nauka.pool.length) {
+                        document.getElementById('nauka-resume-container').classList.remove('hidden');
+                    }
+                }
+            },
+
+            saveState() { localStorage.setItem('psp_state', JSON.stringify(this.state)); },
+
+            showView(viewId) {
+                document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden-view'));
+                document.getElementById(viewId).classList.remove('hidden-view');
+                if(viewId === 'view-dashboard') clearInterval(this.timerInterval);
+            },
+
+            renderCategories() {
+                const container = document.getElementById('nauka-categories');
+                container.innerHTML = `<label class="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded"><input type="checkbox" id="cat-all" checked class="w-5 h-5 accent-fire-red" onchange="app.toggleAllCategories(this)"> <span>Wszystkie</span></label>`;
+                this.categories.forEach(cat => {
+                    container.innerHTML += `<label class="flex items-center gap-2 p-2"><input type="checkbox" value="${cat}" class="cat-checkbox w-5 h-5 accent-fire-red" checked> <span>${cat}</span></label>`;
+                });
+            },
+
+            toggleAllCategories(master) { document.querySelectorAll('.cat-checkbox').forEach(cb => cb.checked = master.checked); },
+
+            startNauka() {
+                const mode = document.getElementById('nauka-mode').value;
+                const selectedCats = Array.from(document.querySelectorAll('.cat-checkbox:checked')).map(cb => cb.value);
+                let pool = this.questions.filter(q => selectedCats.includes(q.kategoria));
+                
+                if (pool.length === 0) return alert('Wybierz przynajmniej jedną kategorię!');
+                if (mode === 'random') pool = pool.sort(() => Math.random() - 0.5);
+
+                this.state.nauka = { pool, currentIndex: 0, correct: 0, wrong: 0 };
+                this.saveState();
+                this.renderNaukaQuestion();
+                this.showView('view-nauka');
+            },
+
+            resumeNauka() { this.renderNaukaQuestion(); this.showView('view-nauka'); },
+
+            renderNaukaQuestion() {
+                const s = this.state.nauka;
+                if (s.currentIndex >= s.pool.length) {
+                    alert('Zakończyłeś wybraną pulę pytań!');
+                    this.state.nauka = null;
+                    this.saveState();
+                    return this.showView('view-dashboard');
+                }
+
+                const q = s.pool[s.currentIndex];
+                document.getElementById('nauka-correct').innerText = `Dobre: ${s.correct}`;
+                document.getElementById('nauka-wrong').innerText = `Złe: ${s.wrong}`;
+                document.getElementById('nauka-progress').innerText = `Pytanie ${s.currentIndex + 1}/${s.pool.length}`;
+                document.getElementById('nauka-category-label').innerText = q.kategoria;
+                document.getElementById('nauka-question').innerText = q.pytanie;
+
+                // WYŚWIETLANIE OBRAZKA
+                document.getElementById('nauka-image-container').innerHTML = q.obrazek ? `<img src="${q.obrazek}" class="w-full max-h-48 object-contain mb-4 rounded shadow bg-white">` : '';
+
+                const optsContainer = document.getElementById('nauka-options');
+                optsContainer.innerHTML = '';
+                document.getElementById('nauka-next-btn').classList.add('hidden');
+
+                q.opcje.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'w-full text-left p-4 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition font-medium';
+                    btn.innerText = opt;
+                    btn.onclick = () => this.handleNaukaAnswer(btn, idx, q.poprawna);
+                    optsContainer.appendChild(btn);
+                });
+            },
+
+handleNaukaAnswer(btn, selectedIdx, correctIdx) {
+                const btns = document.getElementById('nauka-options').children;
+                const questionText = document.getElementById('nauka-question');
+
+                // Zablokuj klikanie po udzieleniu odpowiedzi
+                for(let b of btns) b.onclick = null; 
+
+                // Lista bazowych klas tła do usunięcia, aby uniknąć konfliktów z podświetleniem
+                const baseBgClasses = ['bg-gray-100', 'dark:bg-gray-800', 'hover:bg-gray-200', 'dark:hover:bg-gray-700'];
+
+                if (selectedIdx === correctIdx) {
+                    // DOBRA ODPOWIEDŹ
+                    // 1. Usuń bazowe tło z klikniętego przycisku
+                    btn.classList.remove(...baseBgClasses);
+                    // 2. Dodaj zielone tło i biały tekst
+                    btn.classList.add('bg-green-500', 'text-white', 'dark:bg-green-600');
+                    // 3. Podświetl treść pytania na zielono
+                    questionText.classList.add('text-green-500', 'dark:text-green-400');
+                    this.state.nauka.correct++;
+                } else {
+                    // ZŁA ODPOWIEDŹ
+                    // 1. Zaznacz kliknięty błędny przycisk na czerwono
+                    // Usuń bazowe tło z błędnego przycisku
+                    btn.classList.remove(...baseBgClasses);
+                    // Dodaj czerwone tło i biały tekst
+                    btn.classList.add('bg-fire-red', 'text-white');
+                    // Podświetl treść pytania na czerwono
+                    questionText.classList.add('text-fire-red');
+
+                    // 2. Wskaż poprawny przycisk na zielono
+                    const correctBtn = btns[correctIdx];
+                    // Usuń bazowe tło z poprawnego przycisku
+                    correctBtn.classList.remove(...baseBgClasses);
+                    // Dodaj zielone tło i biały tekst
+                    correctBtn.classList.add('bg-green-500', 'text-white', 'dark:bg-green-600');
+
+                    this.state.nauka.wrong++;
+                }
+                
+                document.getElementById('nauka-next-btn').classList.remove('hidden');
+                this.saveState();
+            },
+
+            nextNauka() { this.state.nauka.currentIndex++; this.saveState(); this.renderNaukaQuestion(); },
+
+            startEgzamin() {
+                if (this.questions.length < 30) return alert('Brak wystarczającej liczby pytań w bazie.');
+                let pool = [...this.questions].sort(() => Math.random() - 0.5).slice(0, 30);
+                this.state.egzamin = { pool, answers: new Array(30).fill(null), currentIndex: 0, timeLeft: 30 * 60 };
+                this.showView('view-egzamin');
+                this.renderEgzaminQuestion();
+                this.startTimer();
+            },
+
+            startTimer() {
+                clearInterval(this.timerInterval);
+                this.timerInterval = setInterval(() => {
+                    this.state.egzamin.timeLeft--;
+                    let m = Math.floor(this.state.egzamin.timeLeft / 60).toString().padStart(2, '0');
+                    let s = (this.state.egzamin.timeLeft % 60).toString().padStart(2, '0');
+                    document.getElementById('egzamin-timer').innerText = `${m}:${s}`;
+                    if (this.state.egzamin.timeLeft <= 0) { clearInterval(this.timerInterval); this.finishEgzamin(); }
+                }, 1000);
+            },
+
+            renderEgzaminQuestion() {
+                const s = this.state.egzamin;
+                const q = s.pool[s.currentIndex];
+                document.getElementById('egzamin-progress').innerText = `Pytanie ${s.currentIndex + 1}/30`;
+                document.getElementById('egzamin-question').innerText = q.pytanie;
+                
+                // WYŚWIETLANIE OBRAZKA W EGZAMINIE
+                document.getElementById('egzamin-image-container').innerHTML = q.obrazek ? `<img src="${q.obrazek}" class="w-full max-h-48 object-contain mb-4 rounded shadow bg-white">` : '';
+                
+                const optsContainer = document.getElementById('egzamin-options');
+                optsContainer.innerHTML = '';
+                
+                q.opcje.forEach((opt, idx) => {
+                    const btn = document.createElement('button');
+                    const isSelected = s.answers[s.currentIndex] === idx;
+                    btn.className = `w-full text-left p-4 rounded-lg transition font-medium border-2 ${isSelected ? 'border-fire-yellow bg-gray-200 dark:bg-gray-700' : 'border-transparent bg-gray-100 dark:bg-gray-800'}`;
+                    btn.innerText = opt;
+                    btn.onclick = () => { s.answers[s.currentIndex] = idx; this.renderEgzaminQuestion(); this.renderEgzaminGrid(); };
+                    optsContainer.appendChild(btn);
+                });
+
+                document.getElementById('egz-prev').disabled = s.currentIndex === 0;
+                document.getElementById('egz-next').disabled = s.currentIndex === 29;
+                this.renderEgzaminGrid();
+            },
+
+            prevEgzamin() { if(this.state.egzamin.currentIndex > 0) { this.state.egzamin.currentIndex--; this.renderEgzaminQuestion(); } },
+            nextEgzamin() { if(this.state.egzamin.currentIndex < 29) { this.state.egzamin.currentIndex++; this.renderEgzaminQuestion(); } },
+
+            renderEgzaminGrid() {
+                const grid = document.getElementById('egzamin-grid');
+                grid.innerHTML = '';
+                this.state.egzamin.answers.forEach((ans, idx) => {
+                    const btn = document.createElement('button');
+                    btn.innerText = idx + 1;
+                    btn.className = `p-2 rounded text-sm font-bold ${ans !== null ? 'bg-fire-yellow text-black' : 'bg-gray-200 dark:bg-gray-700'} ${this.state.egzamin.currentIndex === idx ? 'ring-2 ring-fire-red' : ''}`;
+                    btn.onclick = () => { this.state.egzamin.currentIndex = idx; this.renderEgzaminQuestion(); };
+                    grid.appendChild(btn);
+                });
+            },
+
+            finishEgzamin() {
+                if(!confirm('Czy na pewno chcesz zakończyć egzamin?')) return;
+                clearInterval(this.timerInterval);
+                
+                const s = this.state.egzamin;
+                let score = 0;
+                let html = '';
+
+                s.pool.forEach((q, idx) => {
+                    const userAns = s.answers[idx];
+                    const isCorrect = userAns === q.poprawna;
+                    if (isCorrect) score++;
+
+                    // Podsumowanie uwzględnia również miniaturki zdjęć
+                    html += `
+                    <div class="p-4 rounded-lg bg-white dark:bg-fire-cardDark shadow border-l-4 ${isCorrect ? 'border-green-500' : 'border-fire-red'}">
+                        <p class="font-bold mb-2">${idx + 1}. ${q.pytanie}</p>
+                        ${q.obrazek ? `<img src="${q.obrazek}" class="w-full max-h-24 object-contain mb-2 rounded bg-gray-50">` : ''}
+                        <ul class="text-sm space-y-1">
+                            ${q.opcje.map((opt, oIdx) => {
+                                let colorClass = 'text-gray-500';
+                                if (oIdx === q.poprawna) colorClass = 'text-green-600 font-bold';
+                                else if (oIdx === userAns) colorClass = 'text-fire-red line-through';
+                                return `<li class="${colorClass}">- ${opt}</li>`;
+                            }).join('')}
+                        </ul>
+                    </div>`;
+                });
+
+                const percent = Math.round((score / 30) * 100);
+                const scoreEl = document.getElementById('summary-score');
+                scoreEl.innerText = `${percent}%`;
+                scoreEl.className = `text-center text-5xl font-bold mb-6 ${percent >= 70 ? 'text-green-500' : 'text-fire-red'}`;
+                
+                document.getElementById('summary-details').innerHTML = html;
+                this.state.egzamin = null; 
+                this.showView('view-summary');
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+</html>
